@@ -1,0 +1,99 @@
+server:
+  error:
+    whitelabel:
+      enabled: false
+
+spring:
+  config:
+    import: optional:consul:127.0.0.1:8500,vault://
+  application:
+    name: company
+  main:
+    lazy-initialization: false
+    banner-mode: "off"
+    allow-bean-definition-overriding: true
+  r2dbc:
+    url: r2dbc:postgresql://${io.github.paulushcgcj.database.host}/${io.github.paulushcgcj.database.name}
+    username: ${io.github.paulushcgcj.database.username}
+    password: ${io.github.paulushcgcj.database.password}
+    pool:
+      enabled: true
+      initialSize: 1
+      minIdle: 1
+      maxSize: 7
+      maxLifeTime: 60000
+      maxIdleTime: 45000
+      maxCreateConnectionTime: 90000
+      poolName: SimplePool
+  flyway:
+    locations: classpath:db/migration
+    enabled: true
+    validate-on-migrate: true
+    user: ${io.github.paulushcgcj.database.username}
+    password: ${io.github.paulushcgcj.database.password}
+    url: jdbc:postgresql://${io.github.paulushcgcj.database.host}/${io.github.paulushcgcj.database.name}
+  security:
+    oauth2:
+      client:
+        provider:
+          keycloak:
+            issuer-uri: ${io.github.paulushcgcj.oauth.server}/realms/${io.github.paulushcgcj.oauth.realm}
+        registration:
+          keycloak:
+            client-id: ${spring.application.name}
+      resourceserver:
+        jwt:
+          issuer-uri: ${io.github.paulushcgcj.oauth.server}/realms/${io.github.paulushcgcj.oauth.realm}
+          jwk-set-uri: ${io.github.paulushcgcj.oauth.server}/realms/${io.github.paulushcgcj.oauth.realm}/protocol/openid-connect/certs
+  cloud:
+    consul:
+      config:
+        enabled: true
+        format: YAML
+        prefix:
+          - simple
+      discovery:
+        health-check-tls-skip-verify: true
+        preferIpAddress: true
+        enabled: true
+        register: true
+        instanceId: ${spring.application.name}:${vcap.application.instance_id:${spring.application.instance_id:${random.value}}}
+        serviceName: ${spring.application.name}
+        healthCheckPath: /health
+        healthCheckInterval: 10s
+        deregister: true
+        ipAddress: 192.168.50.88
+        health-check-critical-timeout: 1m
+        tags: simple,profiles=${spring.profiles.active:default}
+      host: 127.0.0.1
+      port: 8500
+    vault:
+      authentication: TOKEN
+      token: thetoken
+      scheme: http
+      host: 127.0.0.1
+      port: 8200
+      kv:
+        enabled: true
+        backend: simple
+
+management:
+  endpoint:
+    health:
+      show-details: always
+  endpoints:
+    web:
+      base-path: /
+      exposure:
+        include: "*"
+  httpexchanges:
+    recording:
+      include: principal,request-headers,response-headers,cookie-headers,time-taken,authorization-header,remote-address,session-id
+
+springdoc:
+  webjars:
+    prefix: /v3
+  api-docs:
+    groups:
+      enabled: true
+  show-actuator: true
