@@ -1,0 +1,393 @@
+name: Frontend Continuous Integration
+on:
+  push:
+    branches:
+      - '*'
+      - '*/*'
+      - '**'
+    tags-ignore:
+      - '**'
+    paths:
+      - "frontend/**"
+      - ".github/workflows/frontend.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  install-dependencies:
+    name: Install dependencies
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm i --prefer-offline
+
+  validate:
+    name: Validate Code
+    runs-on: ubuntu-latest    
+    needs:
+      - install-dependencies
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm i --prefer-offline
+
+      - name: Compile
+        run: npm run compile
+
+      - name: CheckStyle
+        run: npm run checkstyle
+
+      - name: Report Dependencies
+        run: npm run depscheck
+
+      - name: Archive CycloneDX
+        uses: actions/upload-artifact@v2
+        with:
+          name: cyclone
+          path: frontend/bom.json
+          retention-days: 5
+
+  test:    
+    name: Test Code
+    runs-on: ubuntu-latest    
+    needs:
+      - validate
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm i --prefer-offline
+      
+      - name: Run React Test
+        run: npm run test:react
+        env:
+          CI: true
+
+  e2e-test:    
+    name: End-to-End Test
+    runs-on: ubuntu-latest   
+    needs:
+      - validate 
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm i --prefer-offline
+      
+      - name: Run End-to-End Test
+        run: npm run test:e2e
+
+  coverage-test:
+    name: Coverage Test
+    runs-on: ubuntu-latest   
+    needs:
+      - validate  
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      
+      - name: Cache for test results
+        id: cache-tests
+        uses: actions/cache@v3
+        with:
+          path: /coverage
+          key: coverage-${{ github.run_number }}
+          restore-keys: |
+            coverage-
+
+      - name: Install dependencies
+        run: npm i --prefer-offline
+      
+      - name: Run End-to-End Test
+        run: npm run test:coverage
+        env:
+          CI: true
+
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          report_paths: 'frontend/junit.xml'
+
+      - name: Report code coverage
+        uses: romeovs/lcov-reporter-action@v0.3.1
+        with:
+          title: Coverage report
+          delete-old-comments: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          lcov-file: frontend/coverage/lcov.info
+
+  eslint:
+    name: Run eslint scanning
+    runs-on: ubuntu-latest   
+    needs:
+      - validate
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm i --prefer-offline
+      
+      - name: Install ESLint
+        run: |
+          npm install eslint@8.10.0
+          npm install @microsoft/eslint-formatter-sarif@2.1.7
+
+      - name: Run ESLint
+        run: npx eslint .
+          --config .eslintrc
+          --ext .js,.jsx,.ts,.tsx
+          --format @microsoft/eslint-formatter-sarif
+          --output-file eslint-results.sarif
+        continue-on-error: true
+
+      - name: Upload analysis results to GitHub
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: eslint-results.sarif
+          wait-for-processing: true
+
+  sonar:
+    name: SonarCloud
+    runs-on: ubuntu-latest   
+    needs:
+      - eslint
+      - coverage-test
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      
+      - name: Cache for test results
+        id: cache-tests
+        uses: actions/cache@v3
+        with:
+          path: /coverage
+          key: coverage-${{ github.run_number }}
+          restore-keys: |
+            coverage-
+
+      - name: Install dependencies
+        run: npm i --prefer-offline
+            
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.organization=paulushcgcj-github
+            -Dsonar.javascript.lcov.reportPaths=frontend/coverage/lcov.info
+            -Dsonar.projectKey=paulushcgcj-github_simple-mono_front
+
+  security:
+    name: Analyze
+    runs-on: ubuntu-latest
+    needs:
+      - eslint
+      - coverage-test
+    defaults:
+      run:
+        working-directory: frontend
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false      
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: javascript
+
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm i --prefer-offline
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v2
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+        with:
+          category: '/language:javascript'
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    if: github.ref_name == 'main'
+    defaults:
+      run:
+        working-directory: frontend
+    permissions:
+      contents: write
+      discussions: write
+    needs:
+      - eslint
+      - e2e-test
+      - sonar
+      - security
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm i --prefer-offline
+
+      - name: Backing up Changelog
+        run: |
+          mv CHANGELOG.md OLD.CHANGELOG.md
+          touch CHANGELOG.md
+
+      - name: Conventional Changelog Update
+        uses: TriPSs/conventional-changelog-action@v3
+        id: changelog
+        with:
+          github-token: ${{ github.token }}
+          output-file: 'CHANGELOG.md'
+          skip-version-file: 'true'
+          skip-commit: 'true'
+          git-push: 'false'
+
+      - name: Set new version output
+        run: |
+          echo "::set-output name=version::${{ steps.changelog.outputs.version }}"
+          npm version ${{ steps.changelog.outputs.version }} --git-tag-version false
+
+      - name: Update resources
+        uses: test-room-7/action-update-file@v1.6.0
+        with:
+          file-path: |
+            package.json
+            package-lock.json
+            CHANGELOG.md
+          commit-msg: 'doc: updating version to ${{ steps.changelog.outputs.version }}'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT }}
+        with:
+          token: ${{ secrets.PAT }}
+          tag_name: ${{ steps.changelog.outputs.tag }}
+          name: ${{ steps.changelog.outputs.tag }}
+          body: ${{ steps.changelog.outputs.clean_changelog }}
+

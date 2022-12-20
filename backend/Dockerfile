@@ -10,7 +10,7 @@ ENV LANG en_CA.UTF-8
 ENV LANGUAGE en_CA.UTF-8
 ENV LC_ALL en_CA.UTF-8
 
-COPY ./*.jar /usr/share/service/service.jar
+COPY ./simple-webflux.jar /usr/share/service/service.jar
 
 EXPOSE 8080
 
