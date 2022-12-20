@@ -108,7 +108,7 @@ jobs:
         id: jacoco
         uses: madrapps/jacoco-report@v1.3
         with:
-          paths: backend/target/coverage-reports/merged-test-report/jacoco.xml
+          paths: ./target/coverage-reports/merged-test-report/jacoco.xml
           token: ${{ secrets.GITHUB_TOKEN }}
           min-coverage-overall: 70
           min-coverage-changed-files: 70
@@ -123,7 +123,7 @@ jobs:
         uses: cicirello/jacoco-badge-generator@v2
         with:
           generate-branches-badge: true
-          jacoco-csv-file: backend/target/coverage-reports/merged-test-report/jacoco.csv
+          jacoco-csv-file: ./target/coverage-reports/merged-test-report/jacoco.csv
 
       - name: Log coverage percentage
         run: |
@@ -144,7 +144,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: jacoco-report
-          path: backend/target/coverage-reports/merged-test-report/
+          path: ./target/coverage-reports/merged-test-report/
 
       - name: Qualitygate
         run: mvn -B clean verify -P all-tests package sonar:sonar -Dsonar.projectKey=paulushcgcj-github_simple-mono_back -Dsonar.coverage.jacoco.xmlReportPaths=target/coverage-reports/merged-test-report/jacoco.xml --file pom.xml
