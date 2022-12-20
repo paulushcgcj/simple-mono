@@ -1,0 +1,32 @@
+spring:
+  config:
+    import: optional:vault://
+  aop:
+    auto: false
+  zipkin:
+    enabled: false
+  cloud:
+    vault:
+      enabled: false
+    discovery:
+      enabled: false
+    consul:
+      enabled: false
+      config:
+        enabled: false
+      discovery:
+        enabled: false
+        register: false
+server:
+  error:
+    whitelabel:
+      enabled: false
+
+
+logging:
+  level:
+    org:
+      springframework.test: OFF
+      testcontainers: OFF
+    com.github.dockerjava: OFF
+
