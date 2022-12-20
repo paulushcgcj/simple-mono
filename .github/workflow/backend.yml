@@ -6,9 +6,7 @@ on:
       - '*/*'
       - '**'
     tags-ignore:
-      - '**'
-    paths:
-      - "backend/**"
+      - '**'    
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
