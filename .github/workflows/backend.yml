@@ -164,6 +164,9 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           report_paths: '${{ github.workspace }}/backend/target/**/TEST-*.xml'
 
+      - name: Jacoco check
+        run: for x in `ls ${{ github.workspace }}/backend/target/coverage-reports/merged-test-report/`; do echo $x; done
+
       - name: Generate JaCoCo Badge
         uses: cicirello/jacoco-badge-generator@v2
         with:
