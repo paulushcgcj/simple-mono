@@ -6,7 +6,9 @@ on:
       - '*/*'
       - '**'
     tags-ignore:
-      - '**'    
+      - '**'
+    paths:
+      - "frontend/**"
   workflow_dispatch:
 
 concurrency:
