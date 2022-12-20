@@ -19,7 +19,10 @@ concurrency:
 jobs:
   install-dependencies:
     name: Install dependencies
-    runs-on: ubuntu-latest      
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
     steps:
       - uses: actions/checkout@v3
         with:
