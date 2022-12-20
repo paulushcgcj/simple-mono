@@ -84,9 +84,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: backend
-    needs:
-      - validate
+        working-directory: backend    
     steps:
       - uses: actions/checkout@v3
         with:
