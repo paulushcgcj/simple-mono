@@ -176,17 +176,6 @@ jobs:
           delete-old-comments: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
           lcov-file: frontend/coverage/lcov.info
-      
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          args: >
-            -Dsonar.organization=paulushcgcj-github
-            -Dsonar.javascript.lcov.reportPaths=frontend/coverage/lcov.info
-            -Dsonar.projectKey=paulushcgcj_simple-front
 
   eslint:
     name: Run eslint scanning
@@ -276,7 +265,7 @@ jobs:
           args: >
             -Dsonar.organization=paulushcgcj-github
             -Dsonar.javascript.lcov.reportPaths=frontend/coverage/lcov.info
-            -Dsonar.projectKey=paulushcgcj_simple-front
+            -Dsonar.projectKey=paulushcgcj-github_simple-mono_front
 
   security:
     name: Analyze
@@ -334,7 +323,7 @@ jobs:
     needs:
       - eslint
       - e2e-test
-      - sonarcloud
+      - sonar
       - security
     steps:
       - uses: actions/checkout@v3
