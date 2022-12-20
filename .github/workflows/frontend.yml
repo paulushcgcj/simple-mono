@@ -29,10 +29,11 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Use Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
-          node-version: 18.x
+          node-version: 18
           cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
         run: npm i --prefer-offline
@@ -50,11 +51,12 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: Use Node.js ${{ matrix.node-version }}
+      - name: Use Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 18.x
+          node-version: 18
           cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
         run: npm i --prefer-offline
@@ -92,8 +94,9 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 18.x
+          node-version: 18
           cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
         run: npm i --prefer-offline
@@ -120,8 +123,9 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 18.x
+          node-version: 18
           cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
         run: npm i --prefer-offline
@@ -146,8 +150,9 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 18.x
+          node-version: 18
           cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
       
       - name: Cache for test results
         id: cache-tests
@@ -201,8 +206,9 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 18.x
+          node-version: 18
           cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
         run: npm i --prefer-offline
@@ -244,8 +250,9 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 18.x
+          node-version: 18
           cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
       
       - name: Cache for test results
         id: cache-tests
@@ -299,8 +306,9 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 18.x
+          node-version: 18
           cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
         run: npm i --prefer-offline
@@ -336,8 +344,9 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 18.x
+          node-version: 18
           cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
         run: npm i --prefer-offline
